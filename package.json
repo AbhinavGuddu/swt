@@ -1,0 +1,19 @@
+{
+  "name": "china-airlines-uld-management",
+  "version": "1.0.0",
+  "description": "Smart ULD Management System for China Airlines",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run simulator\"",
+    "server": "cd backend && node server.js",
+    "client": "cd frontend && npm run dev",
+    "simulator": "cd simulator && node iotSimulator.js",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../simulator && npm install"
+  },
+  "keywords": ["ULD", "IoT", "AI", "Aviation", "Cargo"],
+  "author": "Your Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
