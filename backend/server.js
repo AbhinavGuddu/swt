@@ -3,13 +3,14 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const bodyParser = require('body-parser');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.NODE_ENV === 'production' ? true : "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
@@ -17,7 +18,11 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
+
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+}
 
 // In-memory data store (replace with MongoDB in production)
 let uldsData = [];
@@ -292,6 +297,13 @@ io.on('connection', (socket) => {
     console.log('Client disconnected:', socket.id);
   });
 });
+
+// Serve frontend for all other routes (client-side routing)
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  });
+}
 
 // Initialize data
 initializeSampleData();
