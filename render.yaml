@@ -15,10 +15,9 @@ services:
     healthCheckPath: /api/ulds
 
   # Frontend Service (Static Site)
-  - type: web
+  - type: static
     name: china-airlines-frontend
     env: static
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     routes:
