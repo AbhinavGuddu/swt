@@ -5,7 +5,8 @@ import MapView from './components/MapView';
 import Dashboard from './components/Dashboard';
 import Analytics from './components/Analytics';
 import AlertPanel from './components/AlertPanel';
-import { BarChart3, Map, Bell, TrendingUp, Plane } from 'lucide-react';
+import { BarChart3, Map, Bell, TrendingUp, Plane, Volume2, VolumeX } from 'lucide-react';
+import soundManager from './utils/soundManager';
 import './App.css';
 
 const socket = io('http://localhost:3000');
@@ -14,11 +15,13 @@ function App() {
     const [activeView, setActiveView] = useState('map');
     const [alertCount, setAlertCount] = useState(0);
     const [isConnected, setIsConnected] = useState(false);
+    const [soundEnabled, setSoundEnabled] = useState(true);
 
     useEffect(() => {
         socket.on('connect', () => {
             setIsConnected(true);
             console.log('✅ Connected to server');
+            soundManager.playConnect(); // Connection sound
         });
 
         socket.on('disconnect', () => {
@@ -28,6 +31,16 @@ function App() {
 
         socket.on('new-alert', (alert) => {
             setAlertCount(prev => prev + 1);
+
+            // Play sound based on alert severity
+            const severity = alert.severity || 'medium';
+            if (severity === 'high') {
+                soundManager.playNotification('critical');
+            } else if (severity === 'medium') {
+                soundManager.playNotification('warning');
+            } else {
+                soundManager.playNotification('info');
+            }
         });
 
         return () => {
@@ -36,6 +49,11 @@ function App() {
             socket.off('new-alert');
         };
     }, []);
+
+    const toggleSound = () => {
+        const newState = soundManager.toggle();
+        setSoundEnabled(newState);
+    };
 
     return (
         <BrowserRouter>
@@ -52,6 +70,25 @@ function App() {
                         </div>
 
                         <div className="header-status">
+                            <button
+                                className="sound-toggle"
+                                onClick={toggleSound}
+                                title={soundEnabled ? 'Mute sounds' : 'Unmute sounds'}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: soundEnabled ? '#10b981' : '#6b7280',
+                                    cursor: 'pointer',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    transition: 'color 0.2s'
+                                }}
+                            >
+                                {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                            </button>
+
                             <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
                                 <span className="status-dot"></span>
                                 {isConnected ? 'Live' : 'Offline'}
