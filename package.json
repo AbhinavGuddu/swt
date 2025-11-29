@@ -4,7 +4,8 @@
   "description": "Smart ULD Management System for China Airlines",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "cd backend && node server.js",
+    "postinstall": "cd backend && npm install",
     "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run simulator\"",
     "server": "cd backend && node server.js",
     "client": "cd frontend && npm run dev",
