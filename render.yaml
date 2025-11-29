@@ -14,11 +14,12 @@ services:
         value: 3000
     healthCheckPath: /api/ulds
 
-# Frontend Service (Static Site) - Moved to top-level staticSites
-staticSites:
-  - name: china-airlines-frontend
+  # Frontend Service (Static Site)
+  - type: web
+    name: china-airlines-frontend
+    env: static
     buildCommand: cd frontend && npm install && npm run build
-    publishPath: frontend/dist
+    staticPublishPath: frontend/dist
     routes:
       - type: rewrite
         source: /api/*
