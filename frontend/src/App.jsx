@@ -19,6 +19,16 @@ function App() {
     const [soundEnabled, setSoundEnabled] = useState(true);
 
     useEffect(() => {
+        // Unlock audio context on first user interaction
+        const unlockAudio = () => {
+            soundManager.resume();
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
+        };
+
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('keydown', unlockAudio);
+
         socket.on('connect', () => {
             setIsConnected(true);
             console.log('✅ Connected to server');
