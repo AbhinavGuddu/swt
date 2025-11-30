@@ -9,7 +9,8 @@ import { BarChart3, Map, Bell, TrendingUp, Plane, Volume2, VolumeX } from 'lucid
 import soundManager from './utils/soundManager';
 import './App.css';
 
-const socket = io('http://localhost:3000');
+// Connect to current host (proxy handles the rest)
+const socket = io();
 
 function App() {
     const [activeView, setActiveView] = useState('map');

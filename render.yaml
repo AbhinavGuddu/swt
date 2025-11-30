@@ -25,5 +25,8 @@ services:
         source: /api/*
         destination: https://china-airlines-backend.onrender.com/api/*
       - type: rewrite
+        source: /socket.io/*
+        destination: https://china-airlines-backend.onrender.com/socket.io/*
+      - type: rewrite
         source: /*
         destination: /index.html

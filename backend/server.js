@@ -305,6 +305,11 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Root route for health check
+app.get('/', (req, res) => {
+  res.send('🚀 China Airlines ULD Backend is Running!');
+});
+
 // Initialize data
 initializeSampleData();
 
