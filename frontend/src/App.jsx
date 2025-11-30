@@ -142,7 +142,11 @@ function App() {
                             >
                                 <Bell size={20} />
                                 <span>Alerts</span>
-                                {alertCount > 0 && <span className="badge">{alertCount}</span>}
+                                {alertCount > 0 && (
+                                    <span className="badge">
+                                        {alertCount > 99 ? '99+' : alertCount}
+                                    </span>
+                                )}
                             </button>
                         </nav>
                     </aside>
