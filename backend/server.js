@@ -298,17 +298,23 @@ io.on('connection', (socket) => {
   });
 });
 
-// Serve frontend for all other routes (client-side routing)
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-  });
-}
-
-// Root route for health check
+// Root route for health check (Must be before wildcard)
 app.get('/', (req, res) => {
   res.send('🚀 China Airlines ULD Backend is Running!');
 });
+
+// Serve frontend for all other routes (client-side routing)
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // Check if file exists before sending, otherwise 404
+    const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+    if (require('fs').existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Frontend build not found on backend server. Use the Frontend URL.');
+    }
+  });
+}
 
 // Initialize data
 initializeSampleData();
