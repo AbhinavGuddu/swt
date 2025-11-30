@@ -19,6 +19,21 @@ function App() {
     const [soundEnabled, setSoundEnabled] = useState(true);
 
     useEffect(() => {
+        // Fetch initial alert count from backend
+        const fetchInitialAlertCount = async () => {
+            try {
+                const response = await fetch('/api/alerts');
+                const data = await response.json();
+                if (data.success) {
+                    setAlertCount(data.count || 0);
+                }
+            } catch (error) {
+                console.error('Failed to fetch initial alert count:', error);
+            }
+        };
+
+        fetchInitialAlertCount();
+
         // Unlock audio context on first user interaction
         const unlockAudio = () => {
             soundManager.resume();

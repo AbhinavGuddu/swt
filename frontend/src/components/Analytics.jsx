@@ -14,7 +14,7 @@ function Analytics() {
 
     const fetchPredictions = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/predictions');
+            const response = await axios.get('/api/predictions');
             setPredictions(response.data.data);
             setLoading(false);
         } catch (error) {

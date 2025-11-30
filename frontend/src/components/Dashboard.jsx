@@ -17,8 +17,8 @@ function Dashboard() {
     const fetchData = async () => {
         try {
             const [analyticsRes, uldsRes] = await Promise.all([
-                axios.get('http://localhost:3000/api/analytics/dashboard'),
-                axios.get('http://localhost:3000/api/ulds')
+                axios.get('/api/analytics/dashboard'),
+                axios.get('/api/ulds')
             ]);
 
             setAnalytics(analyticsRes.data.data);

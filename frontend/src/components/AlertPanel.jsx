@@ -15,7 +15,7 @@ function AlertPanel({ onClearCount }) {
 
     const fetchAlerts = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/alerts');
+            const response = await axios.get('/api/alerts');
             setAlerts(response.data.data);
             setLoading(false);
         } catch (error) {

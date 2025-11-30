@@ -73,7 +73,7 @@ function MapView({ socket }) {
 
     const fetchULDs = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/ulds');
+            const response = await axios.get('/api/ulds');
             setUlds(response.data.data);
             setLoading(false);
         } catch (error) {
