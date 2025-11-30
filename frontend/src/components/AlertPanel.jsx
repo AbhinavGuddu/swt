@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { Bell, AlertCircle, AlertTriangle, Info, CheckCircle2, X } from 'lucide-react';
 import './AlertPanel.css';
+
+const socket = io();
 
 function AlertPanel({ onClearCount }) {
     const [alerts, setAlerts] = useState([]);
@@ -11,6 +14,15 @@ function AlertPanel({ onClearCount }) {
     useEffect(() => {
         fetchAlerts();
         onClearCount();
+
+        // Listen for new alerts via Socket.io
+        socket.on('new-alert', (newAlert) => {
+            setAlerts(prevAlerts => [newAlert, ...prevAlerts]);
+        });
+
+        return () => {
+            socket.off('new-alert');
+        };
     }, []);
 
     const fetchAlerts = async () => {

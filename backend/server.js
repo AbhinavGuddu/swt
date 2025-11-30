@@ -389,12 +389,12 @@ function startInternalSimulator() {
             id: Date.now() + Math.random(),
             uldId: uld.id,
             type: 'Temperature',
+            title: 'High Temperature',
             message: `High temperature detected: ${uld.sensors.temperature.toFixed(1)}°C`,
-            severity: 'warning',
+            severity: 'medium',
             timestamp: new Date()
           };
           alertsData.unshift(alert);
-          if (alertsData.length > 50) alertsData.pop();
           io.emit('new-alert', alert);
         }
 
@@ -403,12 +403,48 @@ function startInternalSimulator() {
             id: Date.now() + Math.random(),
             uldId: uld.id,
             type: 'Battery',
+            title: 'Low Battery',
             message: `Low battery: ${uld.sensors.battery.toFixed(1)}%`,
-            severity: 'critical',
+            severity: 'high',
             timestamp: new Date()
           };
           alertsData.unshift(alert);
           io.emit('new-alert', alert);
+        }
+
+        // Humidity alerts (low severity - info)
+        if (uld.sensors.humidity > 85 && Math.random() < 0.05) {
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Humidity',
+            title: 'High Humidity',
+            message: `Humidity level elevated: ${uld.sensors.humidity.toFixed(1)}%`,
+            severity: 'low',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
+
+        // Status change alerts (info)
+        if (Math.random() < 0.02) {
+          const statuses = ['available', 'in-use', 'in-transit'];
+          const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+          if (uld.status !== newStatus) {
+            const alert = {
+              id: Date.now() + Math.random(),
+              uldId: uld.id,
+              type: 'Status',
+              title: 'Status Update',
+              message: `ULD status changed to: ${newStatus}`,
+              severity: 'low',
+              timestamp: new Date()
+            };
+            alertsData.unshift(alert);
+            io.emit('new-alert', alert);
+            uld.status = newStatus;
+          }
         }
 
         // Emit update
