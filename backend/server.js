@@ -463,6 +463,25 @@ app.get('/api/predictions', (req, res) => {
 
 // Helper functions
 
+function updateAnalytics() {
+  const total = uldsData.length;
+  const available = uldsData.filter(u => u.status === 'available').length;
+  const inUse = uldsData.filter(u => u.status === 'in-use').length;
+  const maintenance = uldsData.filter(u => u.status === 'maintenance').length;
+  const lost = uldsData.filter(u => u.status === 'lost').length;
+
+  analyticsData = {
+    totalULDs: total,
+    available: available,
+    inUse: inUse,
+    maintenance: maintenance,
+    lost: lost,
+    utilizationRate: total > 0 ? ((inUse / total) * 100).toFixed(1) : 0,
+    avgTurnaroundTime: Math.floor(12 + Math.random() * 4), // Mock data
+    recordAccuracy: (98 + Math.random()).toFixed(1) // Mock data
+  };
+}
+
 function checkAlerts(uld) {
   // Low battery alert
   if (uld.sensors.battery < 20) {
