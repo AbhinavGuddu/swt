@@ -61,10 +61,10 @@ function initializeSampleData() {
         airport: airport
       },
       sensors: {
-        temperature: 20 + Math.random() * 10,
-        humidity: 50 + Math.random() * 30,
+        temperature: 15 + Math.random() * 20, // 15-35°C (more variety)
+        humidity: 60 + Math.random() * 30,    // 60-90% (more variety)
         shockLevel: Math.random() * 2,
-        battery: 60 + Math.random() * 40
+        battery: 10 + Math.random() * 90      // 10-100% (DIVERSE - some low!)
       },
       lastUpdate: new Date(),
       createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000)
@@ -387,8 +387,8 @@ function startInternalSimulator() {
 
         // CRITICAL ALERTS (HIGH SEVERITY - RED)
 
-        // Low battery alert (more frequent)
-        if (uld.sensors.battery < 20) {
+        // Low battery alert (VERY frequent)
+        if (uld.sensors.battery < 25 && Math.random() < 0.3) {
           const alert = {
             id: Date.now() + Math.random(),
             uldId: uld.id,
@@ -402,8 +402,8 @@ function startInternalSimulator() {
           io.emit('new-alert', alert);
         }
 
-        // Shock detection (critical)
-        if (Math.random() < 0.03) { // 3% chance
+        // Shock detection (critical) - MORE FREQUENT
+        if (Math.random() < 0.08) { // 8% chance
           const shockLevel = 5 + Math.random() * 3;
           const alert = {
             id: Date.now() + Math.random(),
@@ -420,8 +420,8 @@ function startInternalSimulator() {
 
         // WARNING ALERTS (MEDIUM SEVERITY - YELLOW)
 
-        // High temperature
-        if (uld.sensors.temperature > 35) {
+        // High temperature - with random chance to avoid spam
+        if (uld.sensors.temperature > 33 && Math.random() < 0.2) {
           const alert = {
             id: Date.now() + Math.random(),
             uldId: uld.id,
@@ -435,8 +435,8 @@ function startInternalSimulator() {
           io.emit('new-alert', alert);
         }
 
-        // Low temperature
-        if (uld.sensors.temperature < 15 && Math.random() < 0.1) {
+        // Low temperature - MORE FREQUENT
+        if (uld.sensors.temperature < 18 && Math.random() < 0.2) {
           const alert = {
             id: Date.now() + Math.random(),
             uldId: uld.id,
@@ -446,72 +446,44 @@ function startInternalSimulator() {
             severity: 'medium',
             timestamp: new Date()
           };
-          alertsData.unshift(alert);
-          io.emit('new-alert', alert);
-        }
-
-        // INFO ALERTS (LOW SEVERITY - BLUE)
-
-        // Humidity alerts (more frequent)
-        if (uld.sensors.humidity > 80 && Math.random() < 0.15) {
-          const alert = {
-            id: Date.now() + Math.random(),
-            uldId: uld.id,
-            type: 'Humidity',
-            title: 'High Humidity',
-            message: `Humidity level elevated: ${uld.sensors.humidity.toFixed(1)}%`,
-            severity: 'low',
-            timestamp: new Date()
-          };
-          alertsData.unshift(alert);
-          io.emit('new-alert', alert);
-        }
-
-        // Status change alerts (more frequent)
-        if (Math.random() < 0.08) { // 8% chance
-          const statuses = ['available', 'in-use', 'in-transit'];
-          const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
-          if (uld.status !== newStatus) {
-            const alert = {
-              id: Date.now() + Math.random(),
-              uldId: uld.id,
-              type: 'Status',
+          uldId: uld.id,
+            type: 'Status',
               title: 'Status Update',
-              message: `ULD status changed to: ${newStatus}`,
-              severity: 'low',
-              timestamp: new Date()
-            };
-            alertsData.unshift(alert);
-            io.emit('new-alert', alert);
-            uld.status = newStatus;
-          }
-        }
-
-        // Maintenance reminder (info)
-        if (Math.random() < 0.05) { // 5% chance
-          const alert = {
-            id: Date.now() + Math.random(),
-            uldId: uld.id,
-            type: 'Maintenance',
-            title: 'Maintenance Due',
-            message: `Scheduled maintenance recommended for ULD ${uld.id}`,
-            severity: 'low',
-            timestamp: new Date()
-          };
-          alertsData.unshift(alert);
-          io.emit('new-alert', alert);
-        }
-
-        // Emit update
-        io.emit('uld-updated', uld);
+                message: `ULD status changed to: ${newStatus}`,
+                  severity: 'low',
+                    timestamp: new Date()
+        };
+        alertsData.unshift(alert);
+        io.emit('new-alert', alert);
+        uld.status = newStatus;
       }
+    }
+
+        // Maintenance reminder (info) - MORE FREQUENT
+        if (Math.random() < 0.12) { // 12% chance
+      const alert = {
+        id: Date.now() + Math.random(),
+        uldId: uld.id,
+        type: 'Maintenance',
+        title: 'Maintenance Due',
+        message: `Scheduled maintenance recommended for ULD ${uld.id}`,
+        severity: 'low',
+        timestamp: new Date()
+      };
+      alertsData.unshift(alert);
+      io.emit('new-alert', alert);
+    }
+
+    // Emit update
+    io.emit('uld-updated', uld);
+  }
     });
 
-    // Broadcast dashboard stats update occasionally
-    if (Math.random() < 0.2) {
-      updateAnalytics();
-      io.emit('dashboard-update', analyticsData);
-    }
+// Broadcast dashboard stats update occasionally
+if (Math.random() < 0.2) {
+  updateAnalytics();
+  io.emit('dashboard-update', analyticsData);
+}
 
   }, 5000); // Run every 5 seconds
 }
