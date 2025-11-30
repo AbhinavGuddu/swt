@@ -316,8 +316,378 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Update ULD location and status
+app.post('/api/ulds/:id/location', (req, res) => {
+  const uld = uldsData.find(u => u.id === req.params.id);
+
+  if (!uld) {
+    return res.status(404).json({
+      success: false,
+      message: 'ULD not found'
+    });
+  }
+
+  // Update location and sensors
+  if (req.body.location) uld.location = req.body.location;
+  if (req.body.sensors) uld.sensors = req.body.sensors;
+  if (req.body.status) uld.status = req.body.status;
+  uld.lastUpdate = new Date();
+
+  // Emit real-time update via WebSocket
+  io.emit('uld-update', uld);
+
+  // Check for alerts
+  checkAlerts(uld);
+  updateAnalytics();
+
+  res.json({
+    success: true,
+    data: uld
+  });
+});
+
+// --- Internal Simulator for Live Updates (Render Compatible) ---
+function startInternalSimulator() {
+  console.log('🚀 Starting Internal Simulator...');
+
+  const AIRPORTS = {
+    TPE: { lat: 25.0797, lng: 121.2342 },
+    LAX: { lat: 33.9416, lng: -118.4085 },
+    NRT: { lat: 35.7647, lng: 140.3864 },
+    HKG: { lat: 22.3080, lng: 113.9185 },
+    SIN: { lat: 1.3644, lng: 103.9915 },
+    BKK: { lat: 13.6900, lng: 100.7501 },
+    ICN: { lat: 37.4602, lng: 126.4407 }
+  };
+
+  setInterval(() => {
+    let updatesCount = 0;
+
+    uldsData.forEach(uld => {
+      // Update 40% of ULDs each tick
+      if (Math.random() < 0.4) {
+        updatesCount++;
+
+        // 1. Simulate Movement
+        const airport = AIRPORTS[uld.airport];
+        if (airport) {
+          uld.location.lat = airport.lat + (Math.random() - 0.5) * 0.05;
+          uld.location.lng = airport.lng + (Math.random() - 0.5) * 0.05;
+        }
+
+        // 2. Simulate Sensors
+        uld.sensors.temperature = Math.max(10, Math.min(40, uld.sensors.temperature + (Math.random() - 0.5) * 2));
+        uld.sensors.humidity = Math.max(30, Math.min(90, uld.sensors.humidity + (Math.random() - 0.5) * 5));
+
+        // Battery drain
+        if (uld.status === 'in-use') uld.sensors.battery -= 0.1;
+        if (uld.sensors.battery < 0) uld.sensors.battery = 0;
+
+        // 3. Generate Alerts
+        if (uld.sensors.temperature > 35) {
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Temperature',
+            message: `High temperature detected: ${uld.sensors.temperature.toFixed(1)}°C`,
+            severity: 'warning',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          if (alertsData.length > 50) alertsData.pop();
+          io.emit('new-alert', alert);
+        }
+
+        if (uld.sensors.battery < 15 && uld.sensors.battery > 14.8) { // Trigger once around 15%
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Battery',
+            message: `Low battery: ${uld.sensors.battery.toFixed(1)}%`,
+            severity: 'critical',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
+
+        // Emit update
+        io.emit('uld-updated', uld);
+      }
+    });
+
+    // Broadcast dashboard stats update occasionally
+    if (Math.random() < 0.2) {
+      updateAnalytics();
+      io.emit('dashboard-update', analyticsData);
+    }
+
+  }, 5000); // Run every 5 seconds
+}
+
+// Start the simulator
+startInternalSimulator();
+
+// Get dashboard analytics
+app.get('/api/analytics/dashboard', (req, res) => {
+  updateAnalytics();
+  res.json({
+    success: true,
+    data: analyticsData
+  });
+});
+
+// Get alerts
+app.get('/api/alerts', (req, res) => {
+  res.json({
+    success: true,
+    count: alertsData.length,
+    data: alertsData
+  });
+});
+
+// Get AI predictions
+app.get('/api/predictions', (req, res) => {
+  // Mock AI predictions
+  const predictions = {
+    demandForecast: generateDemandForecast(),
+    shortageWarnings: generateShortageWarnings(),
+    optimizationSuggestions: generateOptimizationSuggestions()
+  };
+
+  res.json({
+    success: true,
+    data: predictions
+  });
+});
+
+// Helper functions
+
+function checkAlerts(uld) {
+  // Low battery alert
+  if (uld.sensors.battery < 20) {
+    addAlert({
+      type: 'warning',
+      severity: 'medium',
+      title: 'Low Battery',
+      message: `ULD ${uld.id} battery at ${uld.sensors.battery.toFixed(1)}%`,
+      uldId: uld.id,
+      timestamp: new Date()
+    });
+  }
+
+  // High shock level
+  if (uld.sensors.shockLevel > 5) {
+    addAlert({
+      type: 'critical',
+      severity: 'high',
+      title: 'Impact Detected',
+      message: `ULD ${uld.id} experienced high impact (${uld.sensors.shockLevel.toFixed(1)}g)`,
+      uldId: uld.id,
+      timestamp: new Date()
+    });
+  }
+
+  // Temperature out of range
+  if (uld.sensors.temperature < 5 || uld.sensors.temperature > 35) {
+    addAlert({
+      type: 'warning',
+      severity: 'medium',
+      title: 'Temperature Warning',
+      message: `ULD ${uld.id} temperature at ${uld.sensors.temperature.toFixed(1)}°C`,
+      uldId: uld.id,
+      timestamp: new Date()
+    });
+  }
+}
+
+function addAlert(alert) {
+  alert.id = `ALERT${Date.now()}`;
+  alertsData.unshift(alert);
+
+  // Keep only last 100 alerts
+  if (alertsData.length > 100) {
+    alertsData = alertsData.slice(0, 100);
+  }
+
+  // Emit alert via WebSocket
+  io.emit('new-alert', alert);
+}
+
+function generateDemandForecast() {
+  const forecast = [];
+  const routes = ['TPE-LAX', 'TPE-NRT', 'TPE-SIN', 'LAX-TPE', 'NRT-TPE'];
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+
+    const routeData = {};
+    routes.forEach(route => {
+      routeData[route] = Math.floor(5 + Math.random() * 15);
+    });
+
+    forecast.push({
+      date: date.toISOString().split('T')[0],
+      ...routeData
+    });
+  }
+
+  return forecast;
+}
+
+function generateShortageWarnings() {
+  const warnings = [];
+  const airports = ['LAX', 'NRT', 'SIN'];
+
+  airports.forEach(airport => {
+    if (Math.random() > 0.5) {
+      warnings.push({
+        airport: airport,
+        predictedShortage: Math.floor(3 + Math.random() * 7),
+        timeframe: '48 hours',
+        confidence: (85 + Math.random() * 10).toFixed(1) + '%'
+      });
+    }
+  });
+
+  return warnings;
+}
+
+function generateOptimizationSuggestions() {
+  return [
+    {
+      type: 'reallocation',
+      priority: 'high',
+      suggestion: 'Move 5 ULDs from TPE to LAX to prevent shortage',
+      estimatedImpact: 'Reduce turnaround time by 1.2 hours'
+    },
+    {
+      type: 'maintenance',
+      priority: 'medium',
+      suggestion: 'Schedule maintenance for 8 ULDs with high usage',
+      estimatedImpact: 'Prevent potential equipment failure'
+    },
+    {
+      type: 'efficiency',
+      priority: 'low',
+      suggestion: 'Optimize warehouse layout at NRT',
+      estimatedImpact: 'Save 15 minutes per ULD retrieval'
+    }
+  ];
+}
+
+// WebSocket connection
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
+// Root route for health check (Must be before wildcard)
+app.get('/', (req, res) => {
+  res.send('🚀 China Airlines ULD Backend is Running!');
+});
+
+// Serve frontend for all other routes (client-side routing)
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // Check if file exists before sending, otherwise 404
+    const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+    if (require('fs').existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Frontend build not found on backend server. Use the Frontend URL.');
+    }
+  });
+}
+
 // Initialize data
 initializeSampleData();
+
+// --- Internal Simulator for Live Updates (Render Compatible) ---
+function startInternalSimulator() {
+  console.log('🚀 Starting Internal Simulator...');
+
+  const AIRPORTS = {
+    TPE: { lat: 25.0797, lng: 121.2342 },
+    LAX: { lat: 33.9416, lng: -118.4085 },
+    NRT: { lat: 35.7647, lng: 140.3864 },
+    HKG: { lat: 22.3080, lng: 113.9185 },
+    SIN: { lat: 1.3644, lng: 103.9915 },
+    BKK: { lat: 13.6900, lng: 100.7501 },
+    ICN: { lat: 37.4602, lng: 126.4407 }
+  };
+
+  setInterval(() => {
+    let updatesCount = 0;
+
+    uldsData.forEach(uld => {
+      // Update 40% of ULDs each tick
+      if (Math.random() < 0.4) {
+        updatesCount++;
+
+        // 1. Simulate Movement
+        const airport = AIRPORTS[uld.airport];
+        if (airport) {
+          uld.location.lat = airport.lat + (Math.random() - 0.5) * 0.05;
+          uld.location.lng = airport.lng + (Math.random() - 0.5) * 0.05;
+        }
+
+        // 2. Simulate Sensors
+        uld.sensors.temperature = Math.max(10, Math.min(40, uld.sensors.temperature + (Math.random() - 0.5) * 2));
+        uld.sensors.humidity = Math.max(30, Math.min(90, uld.sensors.humidity + (Math.random() - 0.5) * 5));
+
+        // Battery drain
+        if (uld.status === 'in-use') uld.sensors.battery -= 0.1;
+        if (uld.sensors.battery < 0) uld.sensors.battery = 0;
+
+        // 3. Generate Alerts
+        if (uld.sensors.temperature > 35) {
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Temperature',
+            message: `High temperature detected: ${uld.sensors.temperature.toFixed(1)}°C`,
+            severity: 'warning',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          if (alertsData.length > 50) alertsData.pop();
+          io.emit('new-alert', alert);
+        }
+
+        if (uld.sensors.battery < 15 && uld.sensors.battery > 14.8) { // Trigger once around 15%
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Battery',
+            message: `Low battery: ${uld.sensors.battery.toFixed(1)}%`,
+            severity: 'critical',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
+
+        // Emit update
+        io.emit('uld-updated', uld);
+      }
+    });
+
+    // Broadcast dashboard stats update occasionally
+    if (Math.random() < 0.2) {
+      updateAnalytics();
+      io.emit('dashboard-update', analyticsData);
+    }
+
+  }, 5000); // Run every 5 seconds
+}
+
+// Start the simulator
+startInternalSimulator();
 
 // Start server
 const PORT = process.env.PORT || 3000;
