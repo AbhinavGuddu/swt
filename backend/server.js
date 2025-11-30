@@ -383,7 +383,44 @@ function startInternalSimulator() {
         if (uld.status === 'in-use') uld.sensors.battery -= 0.1;
         if (uld.sensors.battery < 0) uld.sensors.battery = 0;
 
-        // 3. Generate Alerts
+        // 3. Generate Alerts (More Diverse & Frequent)
+
+        // CRITICAL ALERTS (HIGH SEVERITY - RED)
+
+        // Low battery alert (more frequent)
+        if (uld.sensors.battery < 20) {
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Battery',
+            title: 'Low Battery',
+            message: `Battery level critically low: ${uld.sensors.battery.toFixed(1)}%`,
+            severity: 'high',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
+
+        // Shock detection (critical)
+        if (Math.random() < 0.03) { // 3% chance
+          const shockLevel = 5 + Math.random() * 3;
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Impact',
+            title: 'Impact Detected',
+            message: `High impact detected: ${shockLevel.toFixed(1)}g`,
+            severity: 'high',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
+
+        // WARNING ALERTS (MEDIUM SEVERITY - YELLOW)
+
+        // High temperature
         if (uld.sensors.temperature > 35) {
           const alert = {
             id: Date.now() + Math.random(),
@@ -398,22 +435,25 @@ function startInternalSimulator() {
           io.emit('new-alert', alert);
         }
 
-        if (uld.sensors.battery < 15 && uld.sensors.battery > 14.8) { // Trigger once around 15%
+        // Low temperature
+        if (uld.sensors.temperature < 15 && Math.random() < 0.1) {
           const alert = {
             id: Date.now() + Math.random(),
             uldId: uld.id,
-            type: 'Battery',
-            title: 'Low Battery',
-            message: `Low battery: ${uld.sensors.battery.toFixed(1)}%`,
-            severity: 'high',
+            type: 'Temperature',
+            title: 'Low Temperature',
+            message: `Temperature too low: ${uld.sensors.temperature.toFixed(1)}°C`,
+            severity: 'medium',
             timestamp: new Date()
           };
           alertsData.unshift(alert);
           io.emit('new-alert', alert);
         }
 
-        // Humidity alerts (low severity - info)
-        if (uld.sensors.humidity > 85 && Math.random() < 0.05) {
+        // INFO ALERTS (LOW SEVERITY - BLUE)
+
+        // Humidity alerts (more frequent)
+        if (uld.sensors.humidity > 80 && Math.random() < 0.15) {
           const alert = {
             id: Date.now() + Math.random(),
             uldId: uld.id,
@@ -427,8 +467,8 @@ function startInternalSimulator() {
           io.emit('new-alert', alert);
         }
 
-        // Status change alerts (info)
-        if (Math.random() < 0.02) {
+        // Status change alerts (more frequent)
+        if (Math.random() < 0.08) { // 8% chance
           const statuses = ['available', 'in-use', 'in-transit'];
           const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
           if (uld.status !== newStatus) {
@@ -445,6 +485,21 @@ function startInternalSimulator() {
             io.emit('new-alert', alert);
             uld.status = newStatus;
           }
+        }
+
+        // Maintenance reminder (info)
+        if (Math.random() < 0.05) { // 5% chance
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Maintenance',
+            title: 'Maintenance Due',
+            message: `Scheduled maintenance recommended for ULD ${uld.id}`,
+            severity: 'low',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
         }
 
         // Emit update
