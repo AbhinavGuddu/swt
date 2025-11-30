@@ -446,44 +446,72 @@ function startInternalSimulator() {
             severity: 'medium',
             timestamp: new Date()
           };
-          uldId: uld.id,
-            type: 'Status',
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
+
+        // INFO ALERTS (LOW SEVERITY - BLUE)
+
+        // Humidity alerts (VERY frequent)
+        if (uld.sensors.humidity > 75 && Math.random() < 0.25) {
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Humidity',
+            title: 'High Humidity',
+            message: `Humidity level elevated: ${uld.sensors.humidity.toFixed(1)}%`,
+            severity: 'low',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
+
+        // Status change alerts (VERY frequent)
+        if (Math.random() < 0.15) { // 15% chance
+          const statuses = ['available', 'in-use', 'in-transit'];
+          const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+          if (uld.status !== newStatus) {
+            const alert = {
+              id: Date.now() + Math.random(),
+              uldId: uld.id,
+              type: 'Status',
               title: 'Status Update',
-                message: `ULD status changed to: ${newStatus}`,
-                  severity: 'low',
-                    timestamp: new Date()
-        };
-        alertsData.unshift(alert);
-        io.emit('new-alert', alert);
-        uld.status = newStatus;
-      }
-    }
+              message: `ULD status changed to: ${newStatus}`,
+              severity: 'low',
+              timestamp: new Date()
+            };
+            alertsData.unshift(alert);
+            io.emit('new-alert', alert);
+            uld.status = newStatus;
+          }
+        }
 
         // Maintenance reminder (info) - MORE FREQUENT
         if (Math.random() < 0.12) { // 12% chance
-      const alert = {
-        id: Date.now() + Math.random(),
-        uldId: uld.id,
-        type: 'Maintenance',
-        title: 'Maintenance Due',
-        message: `Scheduled maintenance recommended for ULD ${uld.id}`,
-        severity: 'low',
-        timestamp: new Date()
-      };
-      alertsData.unshift(alert);
-      io.emit('new-alert', alert);
-    }
+          const alert = {
+            id: Date.now() + Math.random(),
+            uldId: uld.id,
+            type: 'Maintenance',
+            title: 'Maintenance Due',
+            message: `Scheduled maintenance recommended for ULD ${uld.id}`,
+            severity: 'low',
+            timestamp: new Date()
+          };
+          alertsData.unshift(alert);
+          io.emit('new-alert', alert);
+        }
 
-    // Emit update
-    io.emit('uld-updated', uld);
-  }
+        // Emit update
+        io.emit('uld-updated', uld);
+      }
     });
 
-// Broadcast dashboard stats update occasionally
-if (Math.random() < 0.2) {
-  updateAnalytics();
-  io.emit('dashboard-update', analyticsData);
-}
+    // Broadcast dashboard stats update occasionally
+    if (Math.random() < 0.2) {
+      updateAnalytics();
+      io.emit('dashboard-update', analyticsData);
+    }
 
   }, 5000); // Run every 5 seconds
 }
