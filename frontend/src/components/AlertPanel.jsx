@@ -52,10 +52,13 @@ function AlertPanel({ onClearCount }) {
     const getSeverityColor = (severity) => {
         switch (severity) {
             case 'high':
+            case 'critical': // Backward compatible with old format
                 return 'critical';
             case 'medium':
+            case 'warning': // Backward compatible with old format
                 return 'warning';
             case 'low':
+            case 'info': // Backward compatible with old format
                 return 'info';
             default:
                 return 'info';
@@ -69,9 +72,9 @@ function AlertPanel({ onClearCount }) {
 
     const alertStats = {
         total: alerts.length,
-        critical: alerts.filter(a => a.severity === 'high').length,
-        warning: alerts.filter(a => a.severity === 'medium').length,
-        info: alerts.filter(a => a.severity === 'low').length
+        critical: alerts.filter(a => a.severity === 'high' || a.severity === 'critical').length,
+        warning: alerts.filter(a => a.severity === 'medium' || a.severity === 'warning').length,
+        info: alerts.filter(a => a.severity === 'low' || a.severity === 'info').length
     };
 
     if (loading) {
